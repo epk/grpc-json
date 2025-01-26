@@ -24,7 +24,7 @@ func (s *serverAsClient) Check(ctx context.Context, in *healthcheck.HealthCheckR
 }
 
 func (s *serverAsClient) Watch(ctx context.Context, in *healthcheck.HealthCheckRequest, opts ...grpc.CallOption) (healthcheck.Health_WatchClient, error) {
-	y := &yielder{ctx: ctx}
+	y := &yielder[healthcheck.HealthCheckResponse]{ctx: ctx}
 
 	// Pull from iter.Seq2[*ListResponse, error].
 	y.recv, y.stop = iter.Pull2(func(yield func(*healthcheck.HealthCheckResponse, error) bool) {
@@ -38,27 +38,27 @@ func (s *serverAsClient) Watch(ctx context.Context, in *healthcheck.HealthCheckR
 	return y, nil
 }
 
-type yielder struct {
-	grpc.ServerStreamingClient[healthcheck.HealthCheckResponse]
-	grpc.ServerStreamingServer[healthcheck.HealthCheckResponse]
+type yielder[T any] struct {
+	grpc.ServerStreamingClient[T]
+	grpc.ServerStreamingServer[T]
 
 	ctx context.Context
 
-	send func(*healthcheck.HealthCheckResponse, error) bool
-	recv func() (*healthcheck.HealthCheckResponse, error, bool)
+	send func(*T, error) bool
+	recv func() (*T, error, bool)
 	stop func()
 }
 
-func (y *yielder) Context() context.Context { return y.ctx }
+func (y *yielder[T]) Context() context.Context { return y.ctx }
 
-func (y *yielder) Send(resp *healthcheck.HealthCheckResponse) error {
+func (y *yielder[T]) Send(resp *T) error {
 	if !y.send(resp, nil) {
 		return errors.New("iterator stopped receiving")
 	}
 	return nil
 }
 
-func (y *yielder) Recv() (*healthcheck.HealthCheckResponse, error) {
+func (y *yielder[T]) Recv() (*T, error) {
 	r, err, ok := y.recv()
 	if err != nil {
 		y.stop()
@@ -70,16 +70,16 @@ func (y *yielder) Recv() (*healthcheck.HealthCheckResponse, error) {
 	return r, nil
 }
 
-func (y *yielder) SendMsg(m any) error {
-	return y.Send(m.(*healthcheck.HealthCheckResponse))
+func (y *yielder[T]) SendMsg(m any) error {
+	return y.Send(m.(*T))
 }
 
-func (y *yielder) RecvMsg(m any) error {
+func (y *yielder[T]) RecvMsg(m any) error {
 	r, err := y.Recv()
 	if err != nil {
 		return err
 	}
 
-	m.(*healthcheck.HealthCheckResponse).Status = r.Status
+	*m.(*T) = *r
 	return nil
 }
