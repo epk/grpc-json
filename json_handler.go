@@ -139,8 +139,7 @@ func httpError(w http.ResponseWriter, err error) {
 	http.Error(w, st.Message(), HTTPStatusFromCode(st.Code()))
 }
 
-// HTTPStatusFromCode converts a gRPC error code into the corresponding HTTP response status.
-// See: https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+// Taken from https://github.com/grpc-ecosystem/grpc-gateway/blob/d65d53c586c2327c08990c9775e584544d3693a1/runtime/errors.go#L34-L77
 func HTTPStatusFromCode(code codes.Code) int {
 	switch code {
 	case codes.OK:
