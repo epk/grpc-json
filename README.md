@@ -1,18 +1,14 @@
 ## gRPC JSON
 
-A PoC that demonstrates how to provide JSON compatibility for gRPC services without using gRPC-Gateway.
+A proof of concept demonstrating how to provide basic JSON compatibility for gRPC services without using gRPC-Gateway.
 
 ### How to run
 
 Pre-requisites:
 - grcpurl
-```bash
-brew install grpcurl
-```
 - curl
-```bash
-brew install curl
-```
+
+## Demo
 
 1. Run the gRPC server
 ```bash
@@ -22,7 +18,7 @@ go run .
 2. gRPC client using grpcurl
 ```bash
 # Unary
-grpcurl -plaintext -d '{}' 0.0.0.0:50051 grpc.health.v1.Health/Check
+grpcurl -plaintext -d '{}' localhost:50051 grpc.health.v1.Health/Check
 # Server streaming
 grpcurl -plaintext -d '{}' localhost:50051 grpc.health.v1.Health/Watch
 ```
