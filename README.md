@@ -1,6 +1,6 @@
 ## gRPC JSON
 
-A proof of concept demonstrating how to provide basic JSON compatibility for gRPC services without using gRPC-Gateway.
+A proof of concept demonstrating how to have JSON REST and gRPC-web compability in a single gRPC server.
 
 ### How to run
 

@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -21,27 +22,42 @@ func main() {
 
 	// Create a gRPC server
 	s := grpc.NewServer()
-
 	h := &healtcheckServer{}
 	// Register health check service
 	healthcheck.RegisterHealthServer(s, h)
-
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-
+	wrappedGrpc := grpcweb.WrapServer(s)
 	// http mux to route based on content-type
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/",
 		func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("Content-Type") == "application/grpc" {
-				// Serve gRPC server
-				s.ServeHTTP(w, r)
-			} else if r.Header.Get("Content-Type") == "application/json" {
-				NewJSONHandler(newServerAsClient(h)).ServeHTTP(w, r)
-			} else {
-				http.Error(w, "Unsupported content type", http.StatusBadRequest)
+			// early return not POST
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
 			}
+
+			contentType := r.Header.Get("Content-Type")
+			// handle gRPC and REST JSON requests
+			switch contentType {
+			case "application/grpc":
+				s.ServeHTTP(w, r)
+				return
+			case "application/json":
+				NewJSONHandler(newServerAsClient(h)).ServeHTTP(w, r)
+				return
+			}
+
+			// handle gRPC-Web requests
+			if wrappedGrpc.IsGrpcWebRequest(r) {
+				wrappedGrpc.ServeHTTP(w, r)
+				return
+			}
+
+			// default fall through
+			http.Error(w, "unsupported content-	type", http.StatusUnsupportedMediaType)
 		},
 	)
 

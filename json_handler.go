@@ -29,11 +29,6 @@ func NewJSONHandler(c healthcheck.HealthClient) http.Handler {
 }
 
 func (h *JSONHandler) Check(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Read the request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -69,11 +64,6 @@ func (h *JSONHandler) Check(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *JSONHandler) Watch(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Read the request body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
